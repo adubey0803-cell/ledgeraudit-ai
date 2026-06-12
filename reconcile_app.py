@@ -24,6 +24,14 @@ st.markdown(
 # ════════════════════════════════════════════════════════════════════════════════
 st.sidebar.header("Data Source")
 
+# ── Quick action buttons (always visible at top) ──────────────────────────────
+st.sidebar.markdown("**Quick Actions**")
+_qa1, _qa2 = st.sidebar.columns(2)
+_run_csv_top    = _qa1.button("Reconcile CSV", type="primary",  use_container_width=True)
+_run_stripe_top = _qa2.button("Fetch Stripe",  type="secondary", use_container_width=True)
+st.sidebar.caption("Configure inputs in the sections below, then click above.")
+st.sidebar.divider()
+
 # ── Sample data generator ──────────────────────────────────────────────────────
 with st.sidebar.expander("Generate Sample Data", expanded=False):
     st.caption("No real data? Generate random test CSVs instantly.")
@@ -93,7 +101,7 @@ with st.sidebar.expander("Upload CSV files", expanded=True):
     stripe_file  = st.file_uploader("Stripe Payouts CSV", type="csv")
     bank_file    = st.file_uploader("Bank Statement CSV", type="csv")
     csv_ready    = shopify_file and stripe_file and bank_file
-    run_csv      = st.button("Reconcile (CSV)", type="primary", disabled=not csv_ready)
+    run_csv      = st.button("Reconcile (CSV)", type="primary", disabled=not csv_ready) or (_run_csv_top and csv_ready)
 
 st.sidebar.divider()
 
@@ -152,7 +160,7 @@ with st.sidebar.expander("Fetch from Stripe API", expanded=False):
         shop_ready          = shopify_file_stripe or (shopify_store and shopify_token)
         stripe_api_ready    = bool(api_key) and shop_ready and bank_file_stripe
         run_stripe          = st.button("Fetch & Reconcile", type="primary",
-                                        disabled=not stripe_api_ready)
+                                        disabled=not stripe_api_ready) or (_run_stripe_top and stripe_api_ready)
 
 # Guard: nothing to do yet
 if not run_csv and not run_stripe:
