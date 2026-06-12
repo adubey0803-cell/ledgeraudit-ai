@@ -75,6 +75,17 @@ Markdown for inclusion in reports or handoff to accountants.
 
 ---
 
+## Current Limitations (v1)
+
+- **Shopify data** is uploaded as a CSV export — Shopify OAuth API integration is not yet
+  implemented. In a production build this would connect directly via the Shopify Admin API.
+- **Bank statement** is uploaded as a CSV export — Plaid or Open Banking integration is
+  not yet implemented. In a production build this would pull transactions automatically.
+- **Stripe** is connected live via API (real test-mode charges). Shopify and bank remain
+  manual CSV uploads due to API access constraints during development.
+
+---
+
 ## Out of Scope (v1)
 
 - Multi-currency support

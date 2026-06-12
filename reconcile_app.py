@@ -24,6 +24,69 @@ st.markdown(
 # ════════════════════════════════════════════════════════════════════════════════
 st.sidebar.header("Data Source")
 
+# ── Sample data generator ──────────────────────────────────────────────────────
+with st.sidebar.expander("Generate Sample Data", expanded=False):
+    st.caption("No real data? Generate random test CSVs instantly.")
+    num_orders   = st.slider("Number of orders", 3, 10, 5)
+    missing_pct  = st.slider("% missing bank deposits", 0, 50, 20,
+                             help="Simulates orders Stripe collected but bank never received")
+    gen_btn      = st.button("Generate & Download CSVs")
+    if gen_btn:
+        import random, io as _io
+        random.seed()
+        items = ["Rain Jacket","Backpack","Headlamp","Down Jacket","Sleeping Bag",
+                 "Hiking Boots","Trail Shoes","Fleece Vest","Trekking Poles","Base Layer"]
+        stripe_rate = 0.029
+        stripe_flat = 0.30
+        shopify_rows, stripe_rows, bank_rows = [], [], []
+        batch, batch_net = 1, 0.0
+        batch_orders = []
+        today_str = date.today().isoformat()
+        for i in range(num_orders):
+            ref   = f"#500{i+1}"
+            item  = items[i % len(items)]
+            gross = round(random.uniform(20, 250), 2)
+            fee   = round(gross * stripe_rate + stripe_flat, 2)
+            net   = round(gross - fee, 2)
+            shopify_rows.append([ref, today_str, item, f"{gross:.2f}"])
+            stripe_rows.append([f"ch_demo{i+1}", today_str, f"{gross:.2f}",
+                                 f"{fee:.2f}", f"{net:.2f}", f"Payment for {ref} {item}"])
+            missing = random.random() < (missing_pct / 100)
+            if not missing:
+                batch_net += net
+                batch_orders.append(ref)
+            # flush batch every 3 orders or on last order
+            if (i + 1) % 3 == 0 or i == num_orders - 1:
+                if batch_net > 0:
+                    bank_rows.append([today_str,
+                                      f"STRIPE PAYOUT BATCH{batch}",
+                                      f"{batch_net:.2f}"])
+                    batch += 1
+                    batch_net = 0.0
+                    batch_orders = []
+
+        def _to_csv(headers, rows):
+            buf = _io.StringIO()
+            buf.write(",".join(headers) + "\n")
+            for r in rows:
+                buf.write(",".join(r) + "\n")
+            return buf.getvalue().encode("utf-8")
+
+        shopify_csv = _to_csv(["Name","Created at","Lineitem name","Total"], shopify_rows)
+        stripe_csv  = _to_csv(["id","Created","Amount","Fee","Net","Description"], stripe_rows)
+        bank_csv    = _to_csv(["Date","Description","Amount"], bank_rows)
+
+        st.download_button("Download shopify_orders.csv", shopify_csv,
+                           "shopify_orders.csv", "text/csv", key="dl_shop")
+        st.download_button("Download stripe_payouts.csv", stripe_csv,
+                           "stripe_payouts.csv", "text/csv", key="dl_stripe")
+        st.download_button("Download bank_statement.csv", bank_csv,
+                           "bank_statement.csv", "text/csv", key="dl_bank")
+        st.caption(f"Generated {num_orders} orders across {batch-1} bank batch(es). "
+                   "Upload all three above under 'Upload CSV files' to reconcile.")
+
+st.sidebar.divider()
+
 # ── Path A: CSV upload ─────────────────────────────────────────────────────────
 with st.sidebar.expander("Upload CSV files", expanded=True):
     shopify_file = st.file_uploader("Shopify Orders CSV", type="csv")

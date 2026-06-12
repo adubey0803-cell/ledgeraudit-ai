@@ -81,6 +81,19 @@ If the Stripe API is unavailable:
 
 ---
 
+## Important: Data Source Clarification
+
+- **Stripe:** Connected live via Stripe REST API using a test-mode account.
+  All charges are simulated (test card `tok_visa`) — no real money involved.
+- **Shopify:** Not connected via API. Shopify OAuth was outside scope for this build.
+  Orders are provided as a manually created CSV (`shopify_orders_test.csv`) that
+  matches the Stripe test charges exactly.
+- **Bank statement:** Not connected via Plaid or Open Banking API. The bank CSV
+  (`bank_statement_test.csv`) was manually generated with deposit amounts computed
+  from actual Stripe net payouts. In a production build both would be automated.
+
+---
+
 ## Special Notes
 
 - **Test data is real Stripe test-mode data** — charges were created via the Stripe API
