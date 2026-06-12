@@ -27,9 +27,9 @@ st.sidebar.header("Data Source")
 # ── Quick action buttons (always visible at top) ──────────────────────────────
 st.sidebar.markdown("**Quick Actions**")
 _qa1, _qa2 = st.sidebar.columns(2)
-_run_csv_top    = _qa1.button("Reconcile CSV", type="primary",  use_container_width=True)
-_run_stripe_top = _qa2.button("Fetch Stripe",  type="secondary", use_container_width=True)
-st.sidebar.caption("Configure inputs in the sections below, then click above.")
+_run_csv_top    = _qa1.button("Reconcile CSV",  type="primary",   use_container_width=True)
+_run_stripe_top = _qa2.button("Fetch & Reconcile", type="secondary", use_container_width=True)
+st.sidebar.caption("Fill in the sections below, then click a button above.")
 st.sidebar.divider()
 
 # ── Sample data generator ──────────────────────────────────────────────────────
@@ -124,9 +124,7 @@ with st.sidebar.expander("Fetch from Stripe API", expanded=True):
         bank_file_stripe    = st.file_uploader("Bank Statement CSV (still needed)",
                                                type="csv", key="bank_stripe")
         shop_ready          = shopify_file_stripe or (shopify_store and shopify_token)
-        stripe_api_ready    = bool(api_key) and shop_ready and bank_file_stripe
-        run_stripe          = st.button("Fetch & Reconcile", type="primary",
-                                        disabled=not stripe_api_ready) or (_run_stripe_top and stripe_api_ready)
+        stripe_api_ready = bool(api_key) and shop_ready and bank_file_stripe
 
 st.sidebar.divider()
 
@@ -135,8 +133,7 @@ with st.sidebar.expander("Upload CSV files (manual)", expanded=False):
     shopify_file = st.file_uploader("Shopify Orders CSV", type="csv")
     stripe_file  = st.file_uploader("Stripe Payouts CSV", type="csv")
     bank_file    = st.file_uploader("Bank Statement CSV", type="csv")
-    csv_ready    = shopify_file and stripe_file and bank_file
-    run_csv      = st.button("Reconcile (CSV)", type="primary", disabled=not csv_ready) or (_run_csv_top and csv_ready)
+    csv_ready = shopify_file and stripe_file and bank_file
 
 # ── AI explanations (optional) ────────────────────────────────────────────────
 with st.sidebar.expander("AI explanations (optional)", expanded=False):
@@ -158,14 +155,32 @@ with st.sidebar.expander("Period filter (optional)", expanded=False):
     else:
         period_year = period_month = None
 
-# Guard: nothing to do yet
-if not run_csv and not run_stripe:
+# ── Button logic with validation warnings ─────────────────────────────────────
+run_csv    = False
+run_stripe = False
+
+if _run_csv_top:
+    if not shopify_file:
+        st.sidebar.warning("Please upload a Shopify Orders CSV.")
+    if not stripe_file:
+        st.sidebar.warning("Please upload a Stripe Payouts CSV.")
+    if not bank_file:
+        st.sidebar.warning("Please upload a Bank Statement CSV.")
     if csv_ready:
-        st.success("Files ready. Click Reconcile (CSV).")
-    elif _HAS_REQUESTS and api_key:
-        st.success("API key set. Upload Shopify + Bank CSVs, then click Fetch & Reconcile.")
-    else:
-        st.info("Upload CSV files or enter a Stripe API key in the sidebar to begin.")
+        run_csv = True
+
+if _run_stripe_top:
+    if not api_key:
+        st.sidebar.warning("Please enter your Stripe API key.")
+    if not shopify_file_stripe:
+        st.sidebar.warning("Please upload a Shopify Orders CSV.")
+    if not bank_file_stripe:
+        st.sidebar.warning("Please upload a Bank Statement CSV.")
+    if stripe_api_ready:
+        run_stripe = True
+
+if not run_csv and not run_stripe:
+    st.info("Fill in the sidebar and click **Reconcile CSV** or **Fetch & Reconcile** to begin.")
     st.stop()
 
 # ════════════════════════════════════════════════════════════════════════════════
