@@ -93,42 +93,8 @@ with st.sidebar.expander("Generate Sample Data", expanded=False):
         st.caption(f"Generated {num_orders} orders across {batch-1} bank batch(es). "
                    "Upload all three above under 'Upload CSV files' to reconcile.")
 
-st.sidebar.divider()
-
-# ── Path A: CSV upload ─────────────────────────────────────────────────────────
-with st.sidebar.expander("Upload CSV files", expanded=True):
-    shopify_file = st.file_uploader("Shopify Orders CSV", type="csv")
-    stripe_file  = st.file_uploader("Stripe Payouts CSV", type="csv")
-    bank_file    = st.file_uploader("Bank Statement CSV", type="csv")
-    csv_ready    = shopify_file and stripe_file and bank_file
-    run_csv      = st.button("Reconcile (CSV)", type="primary", disabled=not csv_ready) or (_run_csv_top and csv_ready)
-
-st.sidebar.divider()
-
-# ── AI explanations (optional) ────────────────────────────────────────────────
-with st.sidebar.expander("AI explanations (optional)", expanded=False):
-    _default_anthropic = st.secrets.get("anthropic_key", "") if hasattr(st, "secrets") else ""
-    anthropic_key = st.text_input(
-        "Anthropic API key", type="password",
-        value=_default_anthropic,
-        help="Adds a plain-English explanation under each audit finding. "
-             "Get a key at console.anthropic.com. Explanations are cached "
-             "so each unique finding is only called once per session."
-    )
-
-# ── Period filter (applies to all paths) ──────────────────────────────────────
-with st.sidebar.expander("Period filter (optional)", expanded=False):
-    period_mode = st.selectbox("Scope", ["All data", "Specific month"], index=0)
-    if period_mode == "Specific month":
-        period_year  = st.number_input("Year",  min_value=2020, max_value=2030, value=2026)
-        period_month = st.selectbox("Month", list(range(1, 13)), index=5)
-    else:
-        period_year = period_month = None
-
-st.sidebar.divider()
-
-# ── Path B: Live Stripe API ────────────────────────────────────────────────────
-with st.sidebar.expander("Fetch from Stripe API", expanded=False):
+# ── Path B: Live Stripe API (shown first — primary path) ─────────────────────
+with st.sidebar.expander("Fetch from Stripe API", expanded=True):
     if not _HAS_REQUESTS:
         st.warning("`requests` library not found. Run `pip install requests` to enable live fetch.")
         run_stripe = False
@@ -161,6 +127,36 @@ with st.sidebar.expander("Fetch from Stripe API", expanded=False):
         stripe_api_ready    = bool(api_key) and shop_ready and bank_file_stripe
         run_stripe          = st.button("Fetch & Reconcile", type="primary",
                                         disabled=not stripe_api_ready) or (_run_stripe_top and stripe_api_ready)
+
+st.sidebar.divider()
+
+# ── Path A: CSV upload ─────────────────────────────────────────────────────────
+with st.sidebar.expander("Upload CSV files (manual)", expanded=False):
+    shopify_file = st.file_uploader("Shopify Orders CSV", type="csv")
+    stripe_file  = st.file_uploader("Stripe Payouts CSV", type="csv")
+    bank_file    = st.file_uploader("Bank Statement CSV", type="csv")
+    csv_ready    = shopify_file and stripe_file and bank_file
+    run_csv      = st.button("Reconcile (CSV)", type="primary", disabled=not csv_ready) or (_run_csv_top and csv_ready)
+
+# ── AI explanations (optional) ────────────────────────────────────────────────
+with st.sidebar.expander("AI explanations (optional)", expanded=False):
+    _default_anthropic = st.secrets.get("anthropic_key", "") if hasattr(st, "secrets") else ""
+    anthropic_key = st.text_input(
+        "Anthropic API key", type="password",
+        value=_default_anthropic,
+        help="Adds a plain-English explanation under each audit finding. "
+             "Get a key at console.anthropic.com. Explanations are cached "
+             "so each unique finding is only called once per session."
+    )
+
+# ── Period filter (applies to all paths) ──────────────────────────────────────
+with st.sidebar.expander("Period filter (optional)", expanded=False):
+    period_mode = st.selectbox("Scope", ["All data", "Specific month"], index=0)
+    if period_mode == "Specific month":
+        period_year  = st.number_input("Year",  min_value=2020, max_value=2030, value=2026)
+        period_month = st.selectbox("Month", list(range(1, 13)), index=5)
+    else:
+        period_year = period_month = None
 
 # Guard: nothing to do yet
 if not run_csv and not run_stripe:
